@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <style>
+        body{margin:0; background:#fff; font-family: sans-serif;} 
+        #container{width:100%; height:82vh;}
+        #controls{padding: 15px; background: #f8f9fa; border-bottom: 1px solid #ddd; display: flex; align-items: center; gap: 15px;}
+        button { padding: 8px 15px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; }
+        #resetBtn { background: #28a745; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        input[type="number"] { width: 60px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 4px; }
+        .label { font-size: 0.9em; color: #555; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button id="backBtn"><i class="fas fa-arrow-left"></i> Back (1 Min)</button>
+        <div class="label">Offset (Minutes):</div>
+        <input type="number" id="offsetInput" value="0" min="0">
+        <button id="fwdBtn" disabled>Forward (1 Min)</button>
+        <button id="resetBtn">Reset to Live</button>
+        <span id="status" style="margin-left: auto; color: #333; font-size: 0.9em; font-weight: bold; background: #e9ecef; padding: 4px 10px; border-radius: 4px; border: 1px solid #ccc;"></span>
+    </div>
+    <div id="container"></div>
+
+    <script>
+        let currentOffset = 0;
+        let liveReferenceTime = Date.now();
+
+        // Helper to format time as HH:mm:ss
+    function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toTimeString().split(' ')[0]; 
+    }
+
+    const chart = Highcharts.chart('container', {
+            chart: { type: 'line', animation: false, backgroundColor: '#ffffff' },
+            title: { text: 'Live Time Waveform', style: {color: '#333'} },
+            // Merged Tooltip configuration to handle decimals and shared view
+            tooltip: { 
+                shared: true, 
+                crosshairs: true,
+                valueDecimals: 1 // This limits all tooltip values to 1 decimal places
+            },
+            xAxis: { title: { text: 'Time (s)' }, min: 0, max: 1, gridLineWidth: 1 },
+            yAxis: { 
+    title: { text: 'Acceleration (g)' }, 
+    min: -70, 
+    max: 70, 
+    gridLineWidth: 1,
+    plotLines: [{
+        value: 10,
+        color: '#FFA500', // Orange for High
+        dashStyle: 'shortdash',
+        width: 2,
+        zIndex: 5,
+        label: {
+            text: 'H: 10g',
+            align: 'right',
+            style: { color: '#FFA500', fontWeight: 'bold' }
+        }
+    }, {
+        value: 20,
+        color: '#FF0000', // Red for High-High
+        dashStyle: 'solid',
+        width: 2,
+        zIndex: 5,
+        label: {
+            text: 'HH: 20g',
+            align: 'right',
+            style: { color: '#FF0000', fontWeight: 'bold' }
+        }
+    }]
+},            legend: { enabled: false },
+            plotOptions: { series: { color: '#007bff', lineWidth: 1, marker: { enabled: false } } },
+            series: [{ name: 'Vibration', data: [] }]
+        });
+
+        const backBtn = document.getElementById('backBtn');
+        const fwdBtn = document.getElementById('fwdBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const offsetInput = document.getElementById('offsetInput');
+        const status = document.getElementById('status');
+
+        function updateNavigation(offset) {
+            currentOffset = parseInt(offset);
+            offsetInput.value = currentOffset;
+
+        // Calculate the "Display Time"
+        // If live (0), use actual current time. If history, subtract offset from the current time.
+        const now = Date.now();
+        const displayTimestamp = now - (currentOffset * 60000);
+        const timeString = formatTime(displayTimestamp);
+
+  // UI State update
+        fwdBtn.disabled = (currentOffset <= 0);
+        
+        if (currentOffset === 0) {
+            status.style.color = "#28a745"; // Green for live
+            status.innerText = `● LIVE: ${timeString}`;
+            liveReferenceTime = now; // Update reference
+        } else {
+            status.style.color = "#dc3545"; // Red for history
+            status.innerText = `HISTORY: ${timeString}`;
+        }
+            
+            // Notify Dash
+            window.parent.postMessage({ type: 'SET_OFFSET', offset: currentOffset }, '*');
+        }
+
+        // Interval to keep the "Live" clock ticking when offset is 0
+        setInterval(() => {
+        if (currentOffset === 0) {
+            status.innerText = `● LIVE: ${formatTime(Date.now())}`;
+        }
+    }, 1000);
+
+       backBtn.addEventListener('click', () => updateNavigation(currentOffset + 1));
+       fwdBtn.addEventListener('click', () => { if(currentOffset > 0) updateNavigation(currentOffset - 1); });
+       resetBtn.addEventListener('click', () => updateNavigation(0));
+       offsetInput.addEventListener('change', (e) => updateNavigation(e.target.value));
+
+    window.addEventListener('message', (e) => {
+        if (e.data && Array.isArray(e.data)) {
+            const isDatetime = e.data.length > 0 && e.data[0][0] > 1000000;
+            chart.xAxis[0].update({ type: isDatetime ? 'datetime' : 'linear' }, false);
+            chart.series[0].setData(e.data, true);
+        }
+    });
+    // Initialize display
+    updateNavigation(0);
+    </script>
+</body>
+</html>

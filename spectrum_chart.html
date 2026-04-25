@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script src="https://code.highcharts.com/modules/boost.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
+      background: #f5f7fa;
+    }
+
+    #top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #ffffff;
+      border-bottom: 1px solid #ddd;
+    }
+
+    #filter {
+      padding: 5px 8px;
+      font-size: 13px;
+    }
+
+    #rpm-box {
+      font-weight: bold;
+      font-size: 14px;
+      color: #2c3e50;
+    }
+
+    #container {
+      width: 100%;
+      height: calc(100vh - 45px);
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="top-bar">
+  <div>
+    <label>Frequency Filter:</label>
+    <select id="filter">
+      <option value="0-25500">Full Spectrum</option>
+      <option value="50-5000">50 Hz to 5 kHz</option>
+      <option value="5000-15000">5 kHz to 15 kHz</option>
+      <option value="15000-25500">15 kHz to 25.5 kHz</option>
+    </select>
+  </div>
+
+  <div id="rpm-box">
+    Tape Head RPM: -- | 1-Min Analytics (60 Revolutions)
+  </div>
+</div>
+
+<div id="container"></div>
+
+<script>
+  let chart;
+  let currentFilter = [0, 25500];
+
+  const colors = ['#2980b9', '#27ae60', '#d35400', '#8e44ad'];
+  const Y_SHIFT = 5.0;
+
+  // ===== 1-MINUTE BUFFER (60 REVOLUTIONS) =====
+  const spectrumBuffer = {
+    ch1: [], ch2: [], ch3: [], ch4: []
+  };
+  const MAX_FRAMES = 60;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    chart = Highcharts.chart('container', {
+      chart: {
+        type: 'line',
+        animation: false,
+        zoomType: 'x',
+        marginBottom: 100,
+        marginRight: 20
+      },
+      boost: { useGPUTranslations: true },
+      title: { text: undefined },
+
+      xAxis: {
+        type: 'linear',
+        title: { text: 'Frequency (Hz)', style: { fontWeight: 'bold' } },
+        min: 0,
+        max: 25500,
+        tickInterval: 2500,
+        gridLineWidth: 1
+      },
+
+      yAxis: {
+        title: { text: 'Vibration (g) – Cascade View', style: { fontWeight: 'bold' } },
+        min: 0,
+        gridLineWidth: 1
+      },
+
+      tooltip: {
+        split: true,
+        valueDecimals: 2,
+        valueSuffix: ' g'
+      },
+
+      legend: { enabled: true },
+      credits: { enabled: false },
+
+      plotOptions: {
+        series: {
+          lineWidth: 1,
+          marker: { enabled: false }
+        }
+      },
+
+      series: [
+        { name: 'CH1', color: colors[0], data: [] },
+        { name: 'CH2', color: colors[1], data: [] },
+        { name: 'CH3', color: colors[2], data: [] },
+        { name: 'CH4', color: colors[3], data: [] }
+      ]
+    });
+  });
+
+  document.getElementById("filter").addEventListener("change", (e) => {
+    const parts = e.target.value.split("-");
+    currentFilter = [parseInt(parts[0]), parseInt(parts[1])];
+    redrawAveragedSpectrum();
+  });
+
+  window.addEventListener('message', (e) => {
+    if (!e.data || typeof e.data !== 'object') return;
+
+    ['ch1', 'ch2', 'ch3', 'ch4'].forEach(ch => {
+      if (e.data[ch]) {
+        const parsed = JSON.parse(e.data[ch]);
+
+        spectrumBuffer[ch].push(parsed);
+
+        if (spectrumBuffer[ch].length > MAX_FRAMES) {
+          spectrumBuffer[ch].shift(); // keep only last 60 frames
+        }
+      }
+    });
+
+    redrawAveragedSpectrum();
+    updateRPMFromAverage();
+  }, false);
+
+  function averageSpectrum(buffer) {
+    if (buffer.length === 0) return [];
+
+    const len = buffer[0].length;
+    const avg = [];
+
+    for (let i = 0; i < len; i++) {
+      let sum = 0;
+      for (let f = 0; f < buffer.length; f++) {
+        sum += buffer[f][i][1];
+      }
+      avg.push([buffer[0][i][0], sum / buffer.length]);
+    }
+
+    return avg;
+  }
+
+  function redrawAveragedSpectrum() {
+    ['ch1', 'ch2', 'ch3', 'ch4'].forEach((ch, i) => {
+      const avg = averageSpectrum(spectrumBuffer[ch]);
+
+      const filtered = avg
+        .filter(p => p[0] >= currentFilter[0] && p[0] <= currentFilter[1])
+        .map(p => [p[0], p[1] + (i * Y_SHIFT)]);
+
+      chart.series[i].setData(filtered, false);
+    });
+
+    chart.xAxis[0].setExtremes(currentFilter[0], currentFilter[1], false);
+    chart.redraw();
+  }
+
+  function updateRPMFromAverage() {
+    const avgCH1 = averageSpectrum(spectrumBuffer.ch1);
+    if (!avgCH1.length) return;
+
+    let peak = avgCH1.reduce((a, b) => b[1] > a[1] ? b : a);
+    let freqHz = peak[0];
+    let rpm = Math.round(freqHz * 60);
+
+    document.getElementById("rpm-box").innerText =
+      `Tape Head RPM: ${rpm} | 1-Min Analytics (60 Revolutions)`;
+  }
+</script>
+
+</body>
+</html>

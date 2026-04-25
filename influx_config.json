@@ -1,0 +1,7 @@
+{
+    "INFLUX_URL": "http://localhost:8086",
+    "INFLUX_TOKEN": "5m8L4A6OGJQF6_LagDI1tr7qUq-VdJGr73qLTUuwvHCTa8zVtHMEUcq3Bzw9Ynd9Dd6hEZ_afnz4g6rVQ671FQ==",
+    "INFLUX_ORG": "TechMahindra",
+    "INFLUX_BUCKET": "TechroomB2"
+  }
+  

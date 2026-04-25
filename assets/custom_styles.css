@@ -1,0 +1,244 @@
+/*
+ * Custom Styles for Solenis Vibration Analysis Dash App 
+ * Implements fixed sidebar and dark, professional card layout.
+ */
+
+/* Load Font Awesome for icons */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
+:root {
+    --sidebar-width: 250px;
+    --bg-dark: #1f2a40; /* Deep blue/charcoal background */
+    --bg-card: #2e3e5c; /* Slightly lighter blue for cards */
+    --text-light: #f8f9fa; /* Off-white text */
+    --text-muted: #adb5bd; /* Grayish text for subtitles/details */
+    --accent-primary: #00bcd4; /* Cyan/Teal for primary accent */
+    --accent-secondary: #ff9800; /* Orange for secondary accent/active */
+    --border-color: #3f4e6e;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+/* 1. Global & Layout */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* 2. Fixed Sidebar */
+.sidebar-fixed {
+    width: var(--sidebar-width);
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    background-color: var(--bg-card);
+    padding: 20px 0;
+    box-shadow: 4px 0 15px var(--shadow-color);
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.logo-title {
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    padding: 0 20px 20px 20px;
+    margin: 0;
+    border-bottom: 1px solid var(--border-color);
+    letter-spacing: 1px;
+}
+
+/* Navigation Groups */
+.nav-section {
+    margin-top: 20px;
+}
+
+.nav-group-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    padding: 10px 20px 5px;
+    letter-spacing: 0.5px;
+}
+
+/* Navigation Links */
+.nav-link {
+    display: block;
+    text-decoration: none;
+    color: var(--text-light);
+    font-size: 1rem;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+}
+
+.nav-item i {
+    width: 20px;
+    text-align: center;
+    margin-right: 15px;
+    font-size: 1.1rem;
+    color: var(--accent-primary);
+}
+
+.nav-link:hover .nav-item {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Active Link State */
+a.dash-link--active .nav-item {
+    background-color: var(--accent-secondary);
+    color: var(--bg-card);
+    font-weight: 600;
+    border-left: 5px solid var(--accent-primary);
+    padding-left: 15px; /* Adjust padding due to border */
+}
+
+a.dash-link--active .nav-item i {
+    color: var(--bg-card);
+}
+
+/* Sub Navigation Styling */
+.sub-nav-group .nav-item {
+    padding-left: 45px; /* Indent sub-links */
+}
+.sub-nav-group .nav-item i {
+    font-size: 0.9rem;
+    margin-right: 10px;
+}
+
+/* 3. Main Content Area */
+.content-main {
+    margin-left: var(--sidebar-width);
+    padding: 25px;
+    flex-grow: 1;
+    width: calc(100% - var(--sidebar-width));
+}
+
+.page-header {
+    font-size: 2.2rem;
+    color: var(--text-light);
+    margin-bottom: 25px;
+    border-left: 5px solid var(--accent-primary);
+    padding-left: 15px;
+    font-weight: 300;
+}
+
+/* 4. Chart Card Styling */
+.card {
+    background-color: var(--bg-card);
+    border-radius: 10px;
+    box-shadow: 0 4px 15px var(--shadow-color);
+    padding: 20px;
+    transition: all 0.3s;
+    border: 1px solid var(--border-color);
+}
+
+.card:hover {
+    box-shadow: 0 8px 20px var(--shadow-color);
+}
+
+.chart-title {
+    font-size: 1.2rem;
+    color: var(--accent-primary);
+    margin: 0 0 15px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed var(--border-color);
+    font-weight: 500;
+}
+
+/* Grid Layouts */
+.view-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 20px;
+}
+
+.chart-iframe {
+    width: 100%;
+    border: none;
+    background-color: transparent;
+}
+
+/* 5. Mobile Adjustments */
+@media (max-width: 900px) {
+    .sidebar-fixed {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding-bottom: 0;
+        box-shadow: none;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .content-main {
+        margin-left: 0;
+        width: 100%;
+        padding: 15px;
+    }
+    
+    .logo-title {
+        border-bottom: none;
+        padding-bottom: 10px;
+    }
+
+    /* Collapse navigation items into a scrollable horizontal row on mobile */
+    .nav-section {
+        margin-top: 0;
+    }
+
+    .nav-group-title {
+        display: none; /* Hide titles on mobile */
+    }
+
+    .nav-link {
+        flex-shrink: 0;
+    }
+
+    .nav-link .nav-item {
+        padding: 8px 15px;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .nav-link .nav-item i {
+        margin-right: 0;
+        margin-bottom: 5px;
+    }
+    .nav-link .nav-title {
+        font-size: 0.8rem;
+    }
+
+    /* Override mobile for Spectrum Analysis sub-menu (optional: keep as a vertical list if too wide) */
+    .sub-nav-group {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        border-top: 1px solid var(--border-color);
+        padding-top: 5px;
+    }
+    .sub-nav-group .nav-item {
+        padding-left: 15px; /* Reset indentation */
+        flex-direction: column;
+    }
+    .sub-nav-group .nav-link {
+        width: 25%; /* 4 columns */
+    }
+
+    .view-grid {
+        grid-template-columns: 1fr;
+    }
+}

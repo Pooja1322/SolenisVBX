@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        #container { width: 100%; height: 520px; background-color: #ffffff; }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<script>
+    let chart;
+    const tempColor = '#e74c3c'; // Professional Red (Temperature)
+    const vibColor = '#2980b9';  // Professional Blue (Vibration)
+
+    /**
+     * Refactored Marker Logic:
+     * - Color codes markers to match their respective Y-axis.
+     * - Aligns labels to the same side as the axis (Left for Temp, Right for Vib).
+     * - Filters strictly for HH and LL.
+     */
+    function generatePlotLines(config, fieldName) {
+        if (!config || !config[fieldName] || !config[fieldName].ranges) return [];
+        
+        const isTemp = fieldName === 'Temperature';
+        const axisColor = isTemp ? tempColor : vibColor;
+        const labelAlign = isTemp ? 'left' : 'right';
+        const labelX = isTemp ? 10 : -10;
+
+        return config[fieldName].ranges
+            .filter(range => range.label === 'HH' || range.label === 'LL')
+            .map(range => ({
+                value: range.label === 'HH' ? (range.from ?? range.to) : (range.to ?? range.from),
+                color: axisColor,
+                dashStyle: 'ShortDash',
+                width: 2,
+                zIndex: 5,
+                label: {
+                    text: `${fieldName === 'Temperature' ? 'Temp' : 'Vib'} ${range.label}: ${range.label === 'HH' ? range.from : range.to}`,
+                    align: labelAlign,
+                    x: labelX,
+                    style: { 
+                        color: axisColor, 
+                        fontWeight: 'bold', 
+                        textOutline: '2px white' 
+                    }
+                }
+            }));
+    }
+
+    function initializeChart(limitsConfig, tempHistory = [], vibHistory = []) {
+        if (chart) chart.destroy();
+
+        const tempLimits = limitsConfig.Temperature || {};
+        const vibLimits = limitsConfig.Vibration || {};
+
+        chart = Highcharts.chart('container', {
+            chart: { 
+                type: 'line', 
+                animation: { duration: 800 }, 
+                zoomType: 'x', 
+                backgroundColor: '#ffffff', 
+                marginTop: 60 
+            },
+            title: { text: null },
+            time: { useUTC: false },
+            
+            // Merged Tooltip configuration to handle decimals and shared view
+            tooltip: { 
+                shared: true, 
+                crosshairs: true,
+                valueDecimals: 1 // This limits all tooltip values to 1 decimal places
+            },
+
+            xAxis: {
+                crosshair: {
+                    enabled: true,
+                    label: {
+                        enabled: true,
+                        format: '{value:.2f}' 
+                    }
+                },
+                type: 'datetime',
+                gridLineWidth: 1,
+                labels: {
+                    useHTML: true,
+                    style: { fontSize: '10px', color: '#666' },
+                    formatter: function() {
+                        return `<div style="text-align:center;">
+                                    <span style="font-size:9px;color:#888;">${Highcharts.dateFormat('%d-%m-%Y', this.value)}</span><br/>
+                                    <span style="font-weight:bold;font-size:11px;color:#333;">${Highcharts.dateFormat('%H:%M:%S', this.value)}</span>
+                                </div>`;
+                    }
+                },
+                tickPixelInterval: 140
+            },
+            yAxis: [
+                { // Temperature Axis (Left)
+                    title: { text: `Temperature (${tempLimits.units || '°C'})`, style: { color: tempColor, fontWeight: 'bold' } },
+                    labels: { style: { color: tempColor } },
+                    min: tempLimits.min ?? 30,
+                    max: tempLimits.max ?? 80,
+                    plotLines: generatePlotLines(limitsConfig, 'Temperature'),
+                    gridLineColor: '#f0f0f0'
+                },
+                { // Vibration Axis (Right)
+                    title: { text: 'Vibration RMS (g)', style: { color: vibColor, fontWeight: 'bold' } },
+                    labels: { format: '{value} g', style: { color: vibColor } },
+                    min: vibLimits.min ?? 0,
+                    max: vibLimits.max ?? 1.4,
+                    opposite: true,
+                    plotLines: generatePlotLines(limitsConfig, 'Vibration'),
+                    gridLineWidth: 0
+                }
+            ],
+            legend: { 
+                enabled: true, 
+                verticalAlign: 'top', 
+                layout: 'horizontal',
+                floating: true,
+                y: -10 
+            },
+            credits: { enabled: false },
+            plotOptions: { series: { marker: { enabled: false }, lineWidth: 2, turboThreshold: 5000 } },
+            series: [
+                { name: 'Temperature', yAxis: 0, color: tempColor, data: tempHistory, tooltip: { valueSuffix: ' °C' } },
+                { name: 'Vibration RMS', yAxis: 1, color: vibColor, data: vibHistory, tooltip: { valueSuffix: ' g' } }
+            ]
+        });
+    }
+
+    function processPayload(payload) {
+        if (!payload) return;
+        
+        if (payload.limits || payload.temp_history || payload.vibration_history) {
+            initializeChart(payload.limits || {}, payload.temp_history || [], payload.vibration_history || []);
+            return;
+        }
+
+        try {
+            if (payload.temp && chart.series[0]) chart.series[0].addPoint(payload.temp, false, true);
+            if (payload.vibration && chart.series[1]) chart.series[1].addPoint(payload.vibration, false, true);
+            chart.redraw();
+        } catch(err) { console.error("Update Error:", err); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => initializeChart({}));
+    window.addEventListener('message', (e) => processPayload(e.data));
+</script>
+</body>
+</html>

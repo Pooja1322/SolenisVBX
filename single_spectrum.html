@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/boost.js"></script>
+<style>
+  body{margin:0;padding:0;overflow:hidden;font-family:'Segoe UI',sans-serif;} 
+  #container{width:100%;height:100%;}
+</style>
+</head><body><div id="container"></div>
+<script>
+  let chart;
+  document.addEventListener('DOMContentLoaded', () => {
+    chart = Highcharts.chart('container', {
+      chart: { 
+        type: 'line', 
+        animation: false, 
+        zoomType: 'x',
+        // FIX 1: Increased marginBottom to 70px to prevent cutting off labels
+        marginBottom: 150, 
+        marginTop: 20, 
+        marginRight: 20, 
+        marginLeft: 60,
+        backgroundColor: '#ffffff'
+      },
+      boost: { useGPUTranslations: true },
+      title: { text: undefined },
+      
+      // X-AXIS CONFIGURATION
+      xAxis: { 
+        type: 'linear',
+        title: { 
+            text: 'Frequency (Hz)', 
+            style: { fontSize: '12px', fontWeight: 'bold', color: '#333' }, 
+            margin: 15 // Pushes title slightly down to avoid overlap with numbers
+        },
+        min: 0, 
+        max: 27000,
+        tickInterval: 5000, // Ticks at 0, 5k, 10k, 15k...
+        gridLineWidth: 1,
+        lineColor: '#ccd6eb',
+        tickWidth: 1,
+        tickLength: 10, // Make ticks visible
+        labels: { 
+            enabled: true,
+            style: { fontSize: '11px', color: '#333' },
+            y: 20 // Explicitly place labels below the line
+        }
+      },
+      
+      // Y-AXIS CONFIGURATION
+      yAxis: { 
+        title: { text: 'Vibration (g)', style: { fontSize: '11px' } },
+        min: 0,
+        gridLineWidth: 1,
+        labels: { style: { fontSize: '10px' } }
+      },
+      
+      legend: { enabled: false }, 
+      credits: { enabled: false },
+      tooltip: { headerFormat: '<b>{point.x} Hz</b><br/>', pointFormat: '{point.y:.3f} g' },
+      
+      series: [{ name: 'FFT', data: [], lineWidth: 1 }]
+    });
+  });
+
+  window.addEventListener('message', (e) => {
+    if (!chart || !e.data) return;
+    const payload = e.data; 
+
+    if (payload.data) {
+        chart.series[0].setData(payload.data, true, false, false);
+    }
+    if (payload.color) {
+        chart.series[0].update({ color: payload.color });
+    }
+  });
+</script></body></html>

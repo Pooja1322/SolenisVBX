@@ -1,0 +1,33 @@
+{
+    "Temperature": {
+      "units": "°C",
+      "min": 30,
+      "max": 80,
+      "ranges": [
+        { "from": 30, "to": 40, "label": "HH", "color": "rgba(231, 76, 60, 0.2)", "label_color": "#c0392b", "align_y": 10 },
+        { "from": 40, "to": 45, "label": "LL", "color": "rgba(241, 196, 15, 0.2)", "label_color": "#f39c12", "align_y": -10 },
+        { "from": 55, "to": 60, "label": "LL", "color": "rgba(241, 196, 15, 0.2)", "label_color": "#f39c12", "align_y": -10, "show_label": false },
+        { "from": 60, "to": 80, "label": "HH", "color": "rgba(231, 76, 60, 0.2)", "label_color": "#c0392b", "align_y": 10, "show_label": false }
+      ]
+    },
+    "RPM": {
+      "units": "RPM",
+      "min": 0,
+      "max": 2000,
+      "ranges": [
+        { "from": 0, "to": 1100, "label": "HH", "color": "rgba(231, 76, 60, 0.2)", "label_color": "#c0392b", "align_y": 10 },
+        { "from": 1100, "to": 1200, "label": "LL", "color": "rgba(241, 196, 15, 0.2)", "label_color": "#f39c12", "align_y": -10 },
+        { "from": 1550, "to": 1700, "label": "LL", "color": "rgba(241, 196, 15, 0.2)", "label_color": "#f39c12", "align_y": -10, "show_label": false },
+        { "from": 1700, "to": 2000, "label": "HH", "color": "rgba(231, 76, 60, 0.2)", "label_color": "#c0392b", "align_y": 10, "show_label": false }
+      ]
+    },
+    "Vibration": {
+      "units": "g",
+      "min": 0,
+      "max": 1,
+      "ranges": [
+        { "from": 0.0, "to": 0.2, "label": "LL", "color": "rgba(46, 204, 113, 0.1)", "label_color": "#27ae60", "align_y": -10 },
+        { "from": 0.5, "to": 1.0, "label": "HH", "color": "rgba(231, 76, 60, 0.2)", "label_color": "#c0392b", "align_y": -10 }
+      ]
+    }
+  }
